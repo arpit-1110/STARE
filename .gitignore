@@ -1,2 +1,2 @@
-data/labels-ah.tar
-data/stare-images.tar
+data/labels/*
+data/images/*
