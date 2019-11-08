@@ -17,9 +17,6 @@ class KNNSolver():
 		self.b = b
 		self.point_set = []
 		self.label_set = []
-		# self.distances = cdist(self.data,self.data).argsort(axis=0)[1:k]
-		# print(self.distances.shape)
-		# print("Got dist")
 		self.initialize()
 		print("Initialized")
 
@@ -30,7 +27,7 @@ class KNNSolver():
 		for x,idx in enumerate(indices):
 			self.point_set.append(x)
 			self.label_set.append(label_set[idx])
-			dist_mat = np.linalg.norm(np.array(point_set)-self.data[x,:],axis=1)
+			dist_mat = np.linalg.norm(self.data-self.data[x,:],axis=1)
 			#Appending b closest neighbours
 			self.point_set+=[x for x in dist_mat.argsort(axis=0)[1:self.b+1]]
 			self.label_set+=[label_set[idx] for x in range((self.b))]
@@ -38,6 +35,7 @@ class KNNSolver():
 	def step(self):
 		new_point_set = [x for x in self.point_set]
 		new_label_set = [x for x in self.label_set]
+		#Initializing all points with seed clusters
 		for idx in range(len(self.data)):
 			if idx in self.point_set:
 				continue
@@ -46,15 +44,19 @@ class KNNSolver():
 				new_label_set.append(self.getLabel(self.data[idx]))
 		self.point_set = [x for x in new_point_set]
 		self.label_set = [x for x in new_label_set]
+		#Main loop to label
 		while True:
 			print("Iterating")
 			new_label_set = [x for x in self.label_set]
 			for x,idx in enumerate(self.point_set):
-				print(idx)
 				new_label_set[idx] = self.getLabel(x)
 			if set(new_label_set) == set(self.label_set):
 				break
 			self.label_set = [x for x in new_label_set]
+		#Majority label should be 0
+		if np.array(self.label_set).sum() > len(self.label_set)//2:
+			self.label_set = (1-np.array(self.label_set)).tolist()
+
 		ret = np.zeros((self.data.shape[0],))
 		ret[self.point_set] = self.label_set
 		return ret    
@@ -71,14 +73,11 @@ class KNNSolver():
 
 def main():
 	feats = []
-	# for img in glob.glob("../data/images/*.ppm"):
-	# 	feats.append(extractFeature(read_img(img,gray=True)))
-	# 	print(img)
 	feats = extractFeature(read_img("../data/images/im0002.ppm",gray=True))
 	feats = np.array(feats)
-	# print(feats.shape)
 	c,h,w = feats.shape
 	feats = feats.reshape((h*w,c))
 	knn = KNNSolver(k=10,p=50,b=10,data=feats)
 	labels = knn.step()
+	print(labels.reshape((60,60)))
 main()
