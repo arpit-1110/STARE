@@ -21,9 +21,9 @@ def delF(img):
     return np.sqrt(Fx**2 + Fy**2 + 1e-7)
 
 def maxEigofHess(img):
-    Fx, Fy = np.gradient(img)
-    Fxx, Fxy = np.gradient(Fx)
-    Fyy, _ = np.gradient(Fy)
+	Fx, Fy = np.gradient(img)
+	Fxx, Fxy = np.gradient(Fx)
+	Fyy, _ = np.gradient(Fy)
 
     eig = (Fxx + Fyy + ((Fxx - Fyy)**2 + (2*Fxy)**2 + 1e-7)**0.5)/2.0
     return eig
@@ -35,7 +35,7 @@ def extractFeature(img):
     featImg[:, 1] = delF(img).reshape(-1)
     featImg[:, 2] = maxEigofHess(img).reshape(-1)
 
-    return featImg
+	return featImg
 
 
 def get_dataset(img_path, label_path):
