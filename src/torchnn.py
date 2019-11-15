@@ -9,7 +9,7 @@ from torchvision.transforms import ToPILImage
 import time
 # import copy
 from torch.autograd import Variable
-from CNNModel import SegModel
+from models import NNModel
 from data_loader import STARE
 import torch.nn.functional as F
 
@@ -44,9 +44,9 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 
 	for epoch in range(num_epochs):
 		print('Epoch ' + str(epoch) + ' running')
-		if epoch > 30:
-			optimizer = optim.SGD(model.parameters(), lr=1e-3, momentum=0.1)
-		if epoch > 50:
+		if epoch > 20:
+			optimizer = optim.SGD(model.parameters(), lr=5e-3, momentum=0.1)
+		if epoch > 40:
 			optimizer = optim.SGD(model.parameters(), lr=5e-4, momentum=0.1)
 		if epoch > 75:
 			optimizer = optim.SGD(model.parameters(), lr=5e-5, momentum=0.1)
@@ -85,11 +85,11 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 		time_elapsed // 60, time_elapsed % 60))
 	return model
 	
-model = SegModel(1)
+model = NNModel()
 model = model.to(device)
-criterion = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1, 10])).float())
+criterion = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1, 5])).float())
 # criterion = nn.CrossEntropyLoss()
-model_optim = optim.SGD(model.parameters(), lr=2e-4, momentum=0.9)
+model_optim = optim.SGD(model.parameters(), lr=5e-2, momentum=0.9)
 # exp_lr_scheduler = lr_scheduler.StepLR(model_optim, step_size=2, gamma=0.1)
 model = train_model(model, criterion, model_optim,
                     # exp_lr_scheduler,

@@ -8,33 +8,40 @@ import cv2
 
 X_size = (605, 700)
 y_size = (605, 700)
+size = 605*700
 
 class STARE(torch.utils.data.Dataset):
 	def __init__(self, transform=None):
-		# self.X_train = glob.glob('../data/images/*.ppm')
-		# self.y_train = glob.glob('../data/labels/*.ppm')
-		self.X_train = cv2.imread("../data/images/im0001.ppm")
-		self.X_train = cv2.cvtColor(self.X_train, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
-		# self.X_train = self.X_train/255
-		# cv2.imshow(self)
-		self.X_train = self.X_train.reshape(605*700)
-		# self.X_train = extractFeature(self.X_train).reshape(605*700, 3)
-		# cv2.imwrite('temp.png', self.X_train[:, 2].reshape(605, 700))
-		self.y_train = cv2.imread("../data/labels/im0001.ah.ppm", cv2.IMREAD_GRAYSCALE).reshape(605, 700)
-		# self.y_train = cv2.cvtColor(self.X_train, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
-		self.y_train = self.y_train//255
-		self.y_train = np.eye(2)[self.y_train].reshape(605*700, 2)
+		imgs = glob.glob('../data/images/*.ppm')
+		lbls = glob.glob('../data/labels/*.ppm')
+		def init_helper(img, lbl):
+			image = cv2.imread(img)
+			image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
+			# self.X_train = self.X_train/255
+			# cv2.imshow(self)
+			image = extractFeature(image, 85.1, 48.9).reshape(size, 3)
+			# cv2.imwrite('temp.png', image[:, 2].reshape(605, 700))
+			label = cv2.imread(lbl, cv2.IMREAD_GRAYSCALE).reshape(605, 700)
+			# self.y_train = cv2.cvtColor(self.X_train, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
+			label = label//255
+			label = np.eye(2)[label].reshape(size, 2)
+			return image, label
 
-		idx = np.random.permutation(605*700)
+		self.X_train = np.zeros((size*len(imgs)//2, 3))
+		self.y_train = np.zeros((size*len(imgs)//2, 2))
+		for i in range(len(imgs)//2):
+			self.X_train[size*i:size*(i+1), :], self.y_train[size*i:size*(i+1), :] = init_helper(imgs[i], lbls[i])
+		idx = np.random.permutation(size)
 		self.X_train = self.X_train[idx]
 		self.y_train = self.y_train[idx]
 
+
 	def __len__(self):
 		# print(self.X_train)
-		return 605*700
+		return size
 
 	def __getitem__(self, idx):
-		X = self.X_train[idx].reshape(1)
+		X = self.X_train[idx].reshape(3)
 
 		y = self.y_train[idx].reshape(2)
 
