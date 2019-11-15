@@ -4,20 +4,21 @@ import torch.nn as nn
 class SegModel(nn.Module):
     def __init__(self, n_channels):
         super(SegModel, self).__init__()
-        self.down1 = nn.Conv2d(n_channels, 16, (7, 7))
-        self.down2 = nn.Conv2d(8, 8, (5, 5))
-        self.down3 = nn.Conv2d(8, 16, (3, 3))
-        self.up3 = nn.ConvTranspose2d(16, 8, (3, 3))
-        self.up2 = nn.ConvTranspose2d(8, 8, (5, 5))
-        self.up1 = nn.ConvTranspose2d(16, n_channels, (7, 7))
-        self.relu = nn.ReLU(inplace=True)
-        self.sigmoid = nn.Sigmoid()
+        self.l1 = nn.Linear(1, 128)
+        self.l2 = nn.Linear(128, 512)
+        self.l3 = nn.Linear(512, 2)
+        self.relu = nn.ReLU()
+        # nn.functional.softmax()
+        self.softmax = nn.Softmax(dim=-1)
     
     def forward(self, x):
-        x = self.relu(self.down1(x))
+        x = self.relu(self.l1(x))
         # x = self.relu(self.down2(x))
         # x = self.relu(self.down3(x))
         # x = self.relu(self.up3(x))
         # x = self.relu(self.up2(x))
-        x = self.sigmoid(self.up1(x))
+        x = self.relu(self.l2(x))
+        x = self.softmax(self.l3(x))
+        # x = self.softmax(x)
+        # print(x)
         return x
