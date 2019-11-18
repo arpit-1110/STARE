@@ -4,11 +4,14 @@ import numpy as np
 from scipy.misc import imread, imresize
 import cv2
 from scipy.misc import imshow
+# from scipy.misc import imwrite
+import torch
+from PIL import Image
+import torch
 import matplotlib.pyplot as plt
+
 # import warnings
 # warnings.filterwarnings('error')
-
-
 
 def read_img(path, gray=True, reshape=False, shape=(256,256)):
     if gray:
@@ -22,7 +25,6 @@ def read_img(path, gray=True, reshape=False, shape=(256,256)):
             img = cv2.resize(img,shape,interpolation=cv2.INTER_NEAREST)
 
     return img
-
 
 def delF(img):
     Fx, Fy = np.gradient(img)
@@ -98,6 +100,28 @@ def normalizeImage(img,mean,std):
     img = (img - np.min(img))/(np.max(img)-np.min(img))*255.0
     return img
 
+def run_model(model, img, label):
+    img = cv2.imread(img)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
+    img = extractFeature(img, 85.1, 48.9).reshape(605*700, 3)
+    pred = model(torch.from_numpy(img).float()).detach().numpy()
+    argmax_pred = np.argmax(pred, 1)
+    # print(argmax_pred)
+    thresh_pred = 1*(pred[:, 1] > 0.8)
+    label = cv2.imread(label, cv2.IMREAD_GRAYSCALE).reshape(605, 700)
+    label = label//255
+    label = label.reshape(605*700)
+    # print((argmax_pred == label).sum())
+    eq = thresh_pred == label
+    true_pos = (eq*label).sum()
+    # print(np.max((1-eq)*(1-label)))
+    false_neg = ((1-eq)*(1-label)).sum()
+    false_pos = eq.sum() - true_pos
+    print(true_pos, false_neg, true_pos/(true_pos + false_neg))
+    print((label == np.zeros(605*700)).sum())
+    pred = pred[:, 1]
+    pred = pred*255
+    imshow(argmax_pred.reshape(605, 700))
 
 
 
@@ -124,40 +148,3 @@ if __name__ == "__main__":
     # img = adjustGamma(img,1.2)
 
     # print(np.max(img))
-
-    # # img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    # # gridsize = 40
-    # # clahe = cv2.createCLAHE(clipLimit=4,tileGridSize=(gridsize,gridsize))
-    # # img = clahe.apply(img)
-    # # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(15,15))
-    # # back = cv2.morphologyEx(img,cv2.MORPH_OPEN,kernel)
-    # # img = img-back
-    # imshow(img)
-    # img = cv2.GaussianBlur(img,(31,31),2)
-
-
-    # imshow(img)
-    # imshow(back)
-    # res = img-back
-    # imshow(res)
-
-
-    # lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-    # lab_planes = cv2.split(lab)
-    # # imshow(lab_planes[0])
-    # gridsize = 20
-    # clahe = cv2.createCLAHE(clipLimit=4,tileGridSize=(gridsize,gridsize))
-    # img = clahe.apply(img)
-    # # lab_planes[0] = clahe.apply(lab_planes[0])
-    # # lab_planes[1] = clahe.apply(lab_planes[1])
-    # # lab_planes[2] = clahe.apply(lab_planes[2])
-    # imshow(clahe.apply(img))
-    # lab = cv2.merge(lab_planes)
-    # # img = cv2.cvtColor(cv2.cvtColor(lab,cv2.COLOR_LAB2RGB),cv2.COLOR_RGB2GRAY)
-    # # # img = clahe.apply(img)
-    # # # print(img.shape)
-    # imshow(img)
-    # cv2.imshow('img',img)
-    # F = delF(img)
-    # print(F)
-    # imshow(F)
