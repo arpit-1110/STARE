@@ -8,10 +8,10 @@ from scipy.misc import imshow
 import torch
 from PIL import Image
 import torch
+import matplotlib.pyplot as plt
+
 # import warnings
 # warnings.filterwarnings('error')
-
-
 
 def read_img(path, gray=True, reshape=False, shape=(256,256)):
 	if gray:
@@ -26,38 +26,49 @@ def read_img(path, gray=True, reshape=False, shape=(256,256)):
 
 	return img
 
-
 def delF(img):
 	Fx, Fy = np.gradient(img)
-	return np.sqrt(Fx**2 + Fy**2 + 1e-7)
+	return np.sqrt(Fx**2 + Fy**2)
 
 def maxEigofHess(img):
 	Fx, Fy = np.gradient(img)
 	Fxx, Fxy = np.gradient(Fx)
 	_, Fyy = np.gradient(Fy)
 
-	eig = (Fxx + Fyy + ((Fxx - Fyy)**2 + (2*Fxy)**2 + 1e-7)**0.5)/2.0
+	eig = (Fxx + Fyy + ((Fxx - Fyy)**2 + (2*Fxy)**2)**0.5)/2.0
 	return eig
+
+def getForegroundMask(img):
+	img = np.array(img)
+	img[img>50] = 255
+	img[img<=50] = 0
+	return img
 
 
 def extractFeature(img,mean,std):
-	img = normalizeImage(img,mean,std)
+	img = np.array(img,dtype=np.uint8)
+	fg = getForegroundMask(img)
+	# img = normalizeImage(img,mean,std)
+	img[fg!=0] = 255-img[fg!=0]
 	img = clahe(img)
 	img = adjustGamma(img)
+	img[fg==0]=0
+	# img = cv2.GaussianBlur(img,(41,41),1)
+	# img = 255.0-img
 	img = img/255
+	print(np.max(img))
 	featImg = np.zeros((img.shape[0]*img.shape[1], 3))
-	featImg[:, 0] = img.reshape(-1)
+	featImg[:, 0] = (img.reshape(-1))
 	featImg[:, 1] = delF(img).reshape(-1)
-	featImg[:, 2] = 10*maxEigofHess(img).reshape(-1)
-	img = (img - img.min())/(img.max() - img.min())*255
-	# cv2.imwrite('img.png', cv2.resize(img, (256, 256), interpolation=cv2.INTER_NEAREST))
-	# imshow(1*(img > 90))
-	# imshow(delF(img))
-	# imshow(maxEigofHess(img))
+	featImg[:, 2] = maxEigofHess(img).reshape(-1)
+	# featImg[:, 1] = 1.0
+	# featImg[:, 2] = 1.0
+	# featImg[:,2] = 1
 	mean = featImg.mean(axis=0)
 	var = featImg.var(axis=0)
 
 	featImg = (featImg - mean)/(var + 1e-7)
+
 	return featImg
 
 
@@ -76,7 +87,7 @@ def adjustGamma(img,gamma=1.0):
 	table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
 	return cv2.LUT(np.array(img, dtype = np.uint8), table)
 
-def clahe(img,clipLimit=2.0,tileGridSize=(8,8)):
+def clahe(img,clipLimit=4.0,tileGridSize=(10,10)):
 	clahe = cv2.createCLAHE(clipLimit=clipLimit,tileGridSize=tileGridSize)
 	return clahe.apply(np.array(img,dtype=np.uint8))
 
@@ -172,3 +183,25 @@ if __name__ == "__main__":
 	# F = delF(img)
 	# print(F)
 	# imshow(F)
+	# img = read_img('../data/images/im0001.ppm', gray=True)
+
+	# mean,std = getNormalizationStatistics('../data/images')
+	# print(mean, std)
+	# img = read_img('../data/images/im0001.ppm',gray=True)
+	# fg = getForegroundMask(img)
+	# img = np.array(img,dtype=np.uint8)
+	# img[fg!=0] = 255-img[fg!=0]
+	# # img = normalizeImage(img,mean,std)
+	# img = clahe(img)
+	# img = adjustGamma(img)
+	# img[fg==0]=0
+	# # img = cv2.GaussianBlur(img,(41,41),1)
+	# imshow(img)
+	# imshow(getForegroundMask(img))
+	# img = normalizeImage(img,mean,std)
+
+	# img = clahe(img)
+	# print(img.shape)
+	# img = adjustGamma(img,1.2)
+
+	# print(np.max(img))
