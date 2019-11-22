@@ -34,7 +34,7 @@ def delF(img):
 def maxEigofHess(img):
 	Fx, Fy = np.gradient(img)
 	Fxx, Fxy = np.gradient(Fx)
-	Fyy, _ = np.gradient(Fy)
+	_, Fyy = np.gradient(Fy)
 
 	eig = (Fxx + Fyy + ((Fxx - Fyy)**2 + (2*Fxy)**2 + 1e-7)**0.5)/2.0
 	return eig
@@ -48,12 +48,16 @@ def extractFeature(img,mean,std):
 	featImg = np.zeros((img.shape[0]*img.shape[1], 3))
 	featImg[:, 0] = img.reshape(-1)
 	featImg[:, 1] = delF(img).reshape(-1)
-	featImg[:, 2] = maxEigofHess(img).reshape(-1)
+	featImg[:, 2] = 10*maxEigofHess(img).reshape(-1)
 	img = (img - img.min())/(img.max() - img.min())*255
 	# cv2.imwrite('img.png', cv2.resize(img, (256, 256), interpolation=cv2.INTER_NEAREST))
 	# imshow(1*(img > 90))
 	# imshow(delF(img))
 	# imshow(maxEigofHess(img))
+	mean = featImg.mean(axis=0)
+	var = featImg.var(axis=0)
+
+	featImg = (featImg - mean)/(var + 1e-7)
 	return featImg
 
 
@@ -115,11 +119,18 @@ def run_model(model, img, label):
 
 
 if __name__ == "__main__":
-	# img = read_img('../data/images/im0001.ppm', gray=True)
+	img = read_img('../data/images/im0001.ppm', gray=True)
 	# mean,std = getNormalizationStatistics('../data/images')
 	# print(mean, std)
 	# img = read_img('../data/images/im0001.ppm',gray=True)
-	run_model(torch.load('Models/model'), '../data/images/im0255.ppm', '../data/labels/im0255.ah.ppm')
+	run_model(torch.load('Models/model'), '../data/images/im0319.ppm', '../data/labels/im0319.ah.ppm')
+	# model = torch.load('Models/model')
+	# X = cv2.imread('../data/images/im0255.ppm')
+	# X = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
+	# X = extractFeature(X, 85.1, 48.9)[:, 0].reshape((1, 1, 605, 700))
+	# label = model(torch.from_numpy(X).float())
+	# print(label.detach().numpy().shape)
+	# imshow(label.detach().numpy()[0, 0])
 	# imshow(img)
 	# img = normalizeImage(img,mean,std)
 	# img = clahe(img)
