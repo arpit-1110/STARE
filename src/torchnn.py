@@ -2,14 +2,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch import optim
-from torch.optim import lr_scheduler
-from PIL import Image
-# import torchvision
-from torchvision.transforms import ToPILImage
 import time
-# import copy
 from torch.autograd import Variable
-from models import NNModel
+from nn import NNModel
 from data_loader import STARE
 import torch.nn.functional as F
 import signal
@@ -19,19 +14,17 @@ np.random.seed(42)
 
 torch.set_default_tensor_type(torch.FloatTensor)
 
+batch_size = 128
 
 train_set = STARE()
 dataloaders = {x: torch.utils.data.DataLoader(
-	train_set, batch_size=256, shuffle=True, num_workers=0)for x in range(1)}
+	train_set, batch_size=batch_size, shuffle=True, num_workers=0)for x in range(1)}
 
 dataset_size = len(train_set)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def train_model(model, criterion, optimizer, num_epochs=10):
-
-	if isinstance(model, str):
-		model = torch.load(model)
 
 	def save_model(*args):
 		torch.save(model, './Models/model')
@@ -43,25 +36,23 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 
 	for epoch in range(num_epochs):
 		print('Epoch ' + str(epoch+1) + ' running')
-		if epoch > 15:
+		if epoch > 20:
 			optimizer = optim.SGD(model.parameters(), lr=5e-3, momentum=0.1)
-		# if epoch > 30:
-		# 	optimizer = optim.SGD(model.parameters(), lr=1e-4, momentum=0.01)
-		# if epoch > 40:
-		# 	optimizer = optim.SGD(model.parameters(), lr=1e-5, momentum=0.01)
+		if epoch > 40:
+			optimizer = optim.SGD(model.parameters(), lr=1e-3, momentum=0.05)
+		if epoch > 60:
+			optimizer = optim.SGD(model.parameters(), lr=1e-4, momentum=0.01)
+		if epoch > 20:
+			optimizer = optim.SGD(model.parameters(), lr=1e-5, momentum=0.01)
 		model.train()
 		running_loss = 0.0
-		val_dice = 0
 		count = 0
 		for i, Data in enumerate(dataloaders[0]):
-			# print(Data)
 			count += 1
 			inputs, labels = Data
-			# print('SHAPE', inputs.shape)
 			inputs = inputs.to(device)
 			labels = labels.to(device)
 			inputs, labels = Variable(inputs), Variable(labels)
-			# print(labels.shape)
 			optimizer.zero_grad()
 			with torch.set_grad_enabled(True):
 				pred_label = model(inputs)
@@ -75,7 +66,7 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 				loss.backward()
 				optimizer.step()
 			running_loss += loss.item()
-		epoch_loss = running_loss / dataset_size
+		epoch_loss = running_loss / count
 		print('Epoch finished ! Loss: {}'.format(epoch_loss))
 
 		print('End of epoch')
@@ -86,14 +77,17 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 	return model
 	
 model = NNModel()
-model = model.to(device)
+if not isinstance(model, str):
+	model = model.to(device)
+else:
+	model = torch.load(model)
+
 criterion = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1, 5])).float())
-# criterion = nn.CrossEntropyLoss()
-model_optim = optim.SGD(model.parameters(), lr=3e-2, momentum=0.9)
-# exp_lr_scheduler = lr_scheduler.StepLR(model_optim, step_size=2, gamma=0.1)
+# optim.Adam()
+model_optim = optim.SGD(model.parameters(), lr=4e-2, momentum=0.9)
 model = train_model(model, criterion, model_optim,
                     # exp_lr_scheduler,
-                    num_epochs=20)
+                    num_epochs=100)
 
 torch.save(model, './Models/model')
 
