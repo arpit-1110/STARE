@@ -11,7 +11,7 @@ y_size = (605, 700)
 size = 605*700
 
 class STARE(torch.utils.data.Dataset):
-	def __init__(self, transform=None):
+	def __init__(self):
 		timgs = glob.glob('../data/images/*.ppm')
 		tlbls = glob.glob('../data/labels/*.ppm')
 		n_img = len(timgs)

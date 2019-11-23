@@ -56,7 +56,7 @@ def extractFeature(img,mean,std):
 	# img = cv2.GaussianBlur(img,(41,41),1)
 	# img = 255.0-img
 	img = img/255
-	print(np.max(img))
+	# print(np.max(img))
 	featImg = np.zeros((img.shape[0]*img.shape[1], 3))
 	featImg[:, 0] = (img.reshape(-1))
 	featImg[:, 1] = delF(img).reshape(-1)
@@ -66,7 +66,7 @@ def extractFeature(img,mean,std):
 	# featImg[:,2] = 1
 	mean = featImg.mean(axis=0)
 	var = featImg.var(axis=0)
-
+	# print(featImg.shape, mean.shape)
 	featImg = (featImg - mean)/(var + 1e-7)
 
 	return featImg
@@ -134,7 +134,7 @@ if __name__ == "__main__":
 	# mean,std = getNormalizationStatistics('../data/images')
 	# print(mean, std)
 	# img = read_img('../data/images/im0001.ppm',gray=True)
-	run_model(torch.load('Models/model'), '../data/images/im0319.ppm', '../data/labels/im0319.ah.ppm')
+	run_model(torch.load('Models/model'), '../data/images/im0003.ppm', '../data/labels/im0003.ah.ppm')
 	# model = torch.load('Models/model')
 	# X = cv2.imread('../data/images/im0255.ppm')
 	# X = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
