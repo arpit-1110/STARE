@@ -69,6 +69,7 @@ def extractFeature(img,mean,std):
     return featImg
 
 
+
 def get_dataset(img_path, label_path):
     images = []
     for img in os.listdir(img_path):

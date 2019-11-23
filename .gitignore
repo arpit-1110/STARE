@@ -1,2 +1,3 @@
 data/labels/*
 data/images/*
+src/__pycache__/*

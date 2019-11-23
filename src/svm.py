@@ -21,7 +21,7 @@ class SVM_Classifier():
         self.imgdir = os.path.join(self.datadir,'images')
         self.labeldir = os.path.join(self.datadir,'labels')
         # self.classifier = linear_model.SGDClassifier(max_iter=5000, verbose=1)
-        self.classifier = svm.LinearSVC(max_iter=5000, class_weight = {1.0:1,-1.0:6.5}, verbose=1, C=0.1)
+        self.classifier = svm.LinearSVC(max_iter=5000, class_weight = {1.0:1,-1.0:7.6}, verbose=1, C=0.1)  # -1 weight dec -> white inc
         self.feature_map = None
         self.C_pos = 0.14
         self.C_neg = 1.63
@@ -228,7 +228,7 @@ if __name__ == "__main__":
 
     # # print(svm_classifier.X_train.shape)
     svm_classifier.predict()
-    imagePath = '../data/images/im0324.ppm'
+    # imagePath = '../data/images/im0324.ppm'
     # feats = extractFeature(read_img(imagePath,gray=True))
     # pred_labels = np.array(svm_classifier.classifier.predict(feats))
     # print((np.sum(pred_labels)))
