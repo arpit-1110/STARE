@@ -1,3 +1,5 @@
 data/labels/*
 data/images/*
+data/val_images/*
+data/val_labels/*
 src/__pycache__/*

@@ -3,13 +3,16 @@ import sys
 import numpy as np
 from scipy.misc import imread, imresize
 import cv2
-from scipy.misc import imshow
+from scipy.misc import imshow, imsave
+from sklearn.kernel_approximation import RBFSampler
 # from scipy.misc import imwrite
 import torch
 from PIL import Image
 import torch
 import matplotlib.pyplot as plt
 import queue
+import glob
+from post_processing import clean_small_areas
 
 # import warnings
 # warnings.filterwarnings('error')
@@ -112,6 +115,7 @@ def get_dataset(img_path, label_path):
 
     return np.array(images), np.array(labels)
 
+
 def adjustGamma(img,gamma=0.9):
     invGamma = 1.0/gamma
     table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
@@ -134,9 +138,10 @@ def normalizeImage(img,mean,std):
     img = (img - np.min(img))/(np.max(img)-np.min(img))*255.0
     return img
 
-def run_model(model, img, label):
+def run_model(model, img, label, name):
     img = cv2.imread(img)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
+    img = img.reshape(605, 700, 3)
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
     img = extractFeature(img, 85.1, 48.9).reshape(605*700, 3)
     pred = model(torch.from_numpy(img).float()).detach().numpy()
     argmax_pred = np.argmax(pred, 1)
@@ -146,7 +151,7 @@ def run_model(model, img, label):
     label = label//255
     label = label.reshape(605*700)
     # print((argmax_pred == label).sum())
-    eq = thresh_pred == label
+    eq = argmax_pred == label
     true_pos = (eq*label).sum()
     # print(np.max((1-eq)*(1-label)))
     false_neg = ((1-eq)*(1-label)).sum()
@@ -155,7 +160,7 @@ def run_model(model, img, label):
     print((label == np.zeros(605*700)).sum())
     pred = pred[:, 1]
     pred = pred*255
-    imshow(argmax_pred.reshape(605, 700))
+    imsave(name, clean_small_areas(argmax_pred.reshape(605, 700), 1))
 
 
 def clean_small_areas(I, area):
