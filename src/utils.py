@@ -9,6 +9,7 @@ import torch
 from PIL import Image
 import torch
 import matplotlib.pyplot as plt
+import queue
 
 # import warnings
 # warnings.filterwarnings('error')
@@ -38,7 +39,13 @@ def maxEigofHess(img):
     eig = (Fxx + Fyy + ((Fxx - Fyy)**2 + (2*Fxy)**2)**0.5)/2.0
     return eig
 
-def getForegroundMask(img):
+def getForegroundMask(img, hsi_img):
+    img = np.array(img)
+    img[hsi_img>50] = 255
+    img[hsi_img<=50] = 0
+    return img
+
+def getForegroundMaskSVM(img):
     img = np.array(img)
     img[img>50] = 255
     img[img<=50] = 0
@@ -47,13 +54,38 @@ def getForegroundMask(img):
 
 def extractFeature(img,mean,std):
     img = np.array(img,dtype=np.uint8)
-    fg = getForegroundMask(img)
+    hsi_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:, :, 2]
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
+    fg = getForegroundMask(img,hsi_img)
     # img = normalizeImage(img,mean,std)
-    img[fg==0] = 255-img[fg==0]
+    img[fg!=0] = 255-img[fg!=0]
+    img = cv2.GaussianBlur(img,(21,21),0.5)
+    # img = clahe(img)
+    img = adjustGamma(img)
+    img[fg==0]=0
+    # img = cv2.GaussianBlur(img,(41,41),1)
+    # img = 255.0-img
+    img = img/255
+    print(np.max(img))
+    featImg = np.zeros((img.shape[0]*img.shape[1], 3))
+    featImg[:, 0] = (img.reshape(-1))
+    featImg[:, 1] = delF(img).reshape(-1)
+    featImg[:, 2] = maxEigofHess(img).reshape(-1)
+    # featImg[:, 1] = 1.0
+    # featImg[:, 2] = 1.0
+    # featImg[:,2] = 1
+
+    return featImg
+
+def extractFeatureSVM(img,mean,std):
+    img = np.array(img,dtype=np.uint8)
+    fg = getForegroundMaskSVM(img)
+    # img = normalizeImage(img,mean,std)
+    img[fg!=0] = 255-img[fg!=0]
     img = cv2.GaussianBlur(img,(21,21),0.5)
     img = clahe(img)
     img = adjustGamma(img)
-    img[fg==0]=255
+    img[fg==0]=0
     # img = cv2.GaussianBlur(img,(41,41),1)
     # img = 255.0-img
     img = img/255
@@ -80,7 +112,7 @@ def get_dataset(img_path, label_path):
 
     return np.array(images), np.array(labels)
 
-def adjustGamma(img,gamma=1.0):
+def adjustGamma(img,gamma=0.9):
     invGamma = 1.0/gamma
     table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
     return cv2.LUT(np.array(img, dtype = np.uint8), table)
@@ -126,23 +158,82 @@ def run_model(model, img, label):
     imshow(argmax_pred.reshape(605, 700))
 
 
+def clean_small_areas(I, area):
+
+    labels = label_areas(I.astype(int))
+    sizes = np.bincount(labels.ravel())
+
+    sizes = sizes < area
+    I[sizes[labels]] = 0
+
+    return I
+
+
+
+def label_areas(img):
+
+    [n,m] = img.shape
+    label_areass = np.zeros((n,m))
+    curr = 1
+    for i in range(n):
+        for j in range(m):
+            if img[i,j] == 0 or label_areass[i,j] != 0:
+                continue
+            else:
+                Q = queue.Queue()
+                Q.put([i,j])
+
+                while Q.empty() == False:
+                    [x,y] = Q.get()
+                    label_areass[x,y] = curr
+
+                    if img[x+1,y]==1 and label_areass[x+1,y]==0:
+                        label_areass[x+1,y] = curr
+                        Q.put([x+1,y])
+                    if img[x-1,y]==1 and label_areass[x-1,y]==0:
+                        label_areass[x-1,y] = curr
+                        Q.put([x-1,y])
+                    if img[x,y+1]==1 and label_areass[x,y+1]==0:
+                        label_areass[x,y+1] = curr
+                        Q.put([x,y+1])
+                    if img[x,y-1]==1 and label_areass[x,y-1]==0:
+                        label_areass[x,y-1] = curr
+                        Q.put([x,y-1])
+
+                curr+=1
+    return label_areass.astype(int)
+
+
 
 if __name__ == "__main__":
     # img = read_img('../data/images/im0001.ppm', gray=True)
 
-    mean,std = getNormalizationStatistics('../data/images')
-    print(mean, std)
-    img = read_img('../data/images/im0001.ppm',gray=True)
-    fg = getForegroundMask(img)
-    img = np.array(img,dtype=np.uint8)
-    img[fg==0] = 255-img[fg==0]
-    # img = normalizeImage(img,mean,std)
+    # mean,std = getNormalizationStatistics('../data/images')
+    # print(mean, std)
+    # img = read_img('../data/images/im0001.ppm',gray=True)
+    # imshow(maxEigofHess(img))
+    # fg = getForegroundMask(img)
+    # img = np.array(img,dtype=np.uint8)
+    # img[fg!=0] = 255-img[fg!=0]
+    # # img = normalizeImage(img,mean,std)
     # img = clahe(img)
-    img = cv2.equalizeHist(img)
+    # # img = cv2.equalizeHist(img)
+    # img = adjustGamma(img)
+    # img[fg==0]=0
+    # # img = cv2.GaussianBlur(img,(41,41),1)
+    # imshow(img)
+    img = cv2.imread('../data/images/im0001.ppm')
+    hsi_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:, :, 2]
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
+    fg = getForegroundMask(img,hsi_img)
+    # img = normalizeImage(img,mean,std)
+    img[fg!=0] = 255-img[fg!=0]
+    img = cv2.GaussianBlur(img,(21,21),0.5)
+    # img = clahe(img)
     img = adjustGamma(img)
-    img[fg==0]=255
-    # img = cv2.GaussianBlur(img,(41,41),1)
-    imshow(img)
+    img[fg==0]=0
+    cv2.imwrite('hello.png',img)
+    # imshow(res)
     # imshow(getForegroundMask(img))
     # img = normalizeImage(img,mean,std)
 
