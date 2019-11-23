@@ -18,6 +18,7 @@ class STARE(torch.utils.data.Dataset):
 		def init_helper(img, lbl):
 			image = cv2.imread(img)
 			image = image.reshape(605, 700, 3)
+			image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
 			image = extractFeature(image, 85.1, 48.9).reshape(size, 3)
 			label = cv2.imread(lbl, cv2.IMREAD_GRAYSCALE).reshape(605, 700)
 			label = label//255
