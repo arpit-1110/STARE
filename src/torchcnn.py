@@ -9,9 +9,11 @@ from torchvision.transforms import ToPILImage
 import time
 # import copy
 from torch.autograd import Variable
-from models import NNModel
-from data_loader import STARE
+from models import CNNModel
+from data_loader import STARECNN
 import torch.nn.functional as F
+from scipy.misc import imshow
+
 
 np.random.seed(42)
 
@@ -31,9 +33,9 @@ def dice_coeff(inputs, target):
 def dice_loss(inputs, target):
 	return 1 - dice_coeff(inputs, target)
 
-train_set = STARE('train')
+train_set = STARECNN('train')
 dataloaders = {x: torch.utils.data.DataLoader(
-	train_set, batch_size=128, shuffle=True, num_workers=0)for x in range(1)}
+	train_set, batch_size=2, shuffle=True, num_workers=0)for x in range(1)}
 
 dataset_size = len(train_set)
 
@@ -43,7 +45,7 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 	since = time.time()
 
 	for epoch in range(num_epochs):
-		print('Epoch ' + str(epoch+1) + ' running')
+		print('Epoch ' + str(epoch) + ' running')
 		if epoch > 20:
 			optimizer = optim.SGD(model.parameters(), lr=5e-3, momentum=0.1)
 		if epoch > 40:
@@ -57,20 +59,22 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 		for i, Data in enumerate(dataloaders[0]):
 			# print(Data)
 			count += 1
-			inputs, labels = Data
+			inputs, masks = Data
 			# print('SHAPE', inputs.shape)
 			inputs = inputs.to(device)
-			labels = labels.to(device)
-			inputs, labels = Variable(inputs), Variable(labels)
-			# print(labels.shape)
+			masks = masks.to(device)
+			inputs, masks = Variable(inputs), Variable(masks)
+			# print(masks.shape)
+			# print(inputs.numpy().shape)
+			# imshow(inputs.numpy()[0, 0])
 			optimizer.zero_grad()
 			with torch.set_grad_enabled(True):
-				pred_label = model(inputs)
-				# print(pred_label[0][0])
+				pred_mask = model(inputs)
+				# print(pred_mask[0][0])
 				if criterion is not None:
-					pred_temp_label = pred_label
-					temp_labels = torch.max(labels.long(), 1)[1]
-					loss = criterion(pred_temp_label, temp_labels)
+					pred_temp_mask = pred_mask
+					temp_masks = masks
+					loss = criterion(pred_temp_mask, temp_masks)
 				else:
 					raise ValueError()
 				loss.backward()
@@ -85,14 +89,14 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 		time_elapsed // 60, time_elapsed % 60))
 	return model
 	
-model = NNModel()
+model = CNNModel(1)
 model = model.to(device)
-criterion = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1, 5])).float())
+criterion = nn.MSELoss()
 # criterion = nn.CrossEntropyLoss()
-model_optim = optim.SGD(model.parameters(), lr=1e-2, momentum=0.1)
+model_optim = optim.SGD(model.parameters(), lr=5e-2, momentum=0.9)
 # exp_lr_scheduler = lr_scheduler.StepLR(model_optim, step_size=2, gamma=0.1)
 model = train_model(model, criterion, model_optim,
-                    # exp_lr_scheduler,
-                    num_epochs=50)
-torch.save(model, './Models/model')
+					# exp_lr_scheduler,
+					num_epochs=10)
+torch.save(model, './Models/cnnmodel')
 

@@ -18,3 +18,21 @@ class NNModel(nn.Module):
         # x = self.relu(self.l3(x))
         x = self.softmax(self.l3(x))
         return x
+
+class CNNModel(nn.Module):
+    def __init__(self, n_channels):
+        super(CNNModel, self).__init__()
+        self.conv1 = nn.Conv2d(n_channels, 8, 5, stride=1)
+        self.conv2 = nn.Conv2d(8, 16, 3, stride=1)
+        self.tconv2 = nn.ConvTranspose2d(16, 8, 3, stride=1)
+        self.tconv1 = nn.ConvTranspose2d(8, n_channels, 5, stride=1)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+    
+    def forward(self, x):
+        x = self.relu(self.conv1(x))
+        x = self.relu(self.conv2(x))
+        x = self.relu(self.tconv2(x))
+        x = self.sigmoid(self.tconv1(x))
+        return x
+        
