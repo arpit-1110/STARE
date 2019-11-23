@@ -1,8 +1,9 @@
 import numpy as np 
-from scipy.spatial.distance import cdist	
+from scipy.spatial.distance import cdist    
 from utils import *
 import glob
-
+# from cv2 import imsave
+from matplotlib import pyplot as plt 
 class KNNSolver():
 	def __init__(self,k,p,b,data):
 		# k - param for KNN
@@ -11,7 +12,7 @@ class KNNSolver():
 		# data- numpy matrix, NxD
 		# self.pointset contains indices of points considered
 		# self.label_set contains corresponding labels 
-		self.k = k
+		self.k = k #TODO
 		self.p = p
 		self.data = data 
 		self.b = b
@@ -73,11 +74,22 @@ class KNNSolver():
 
 def main():
 	feats = []
-	feats = extractFeature(read_img("../data/images/im0002.ppm",gray=True))
+	# adjust_gamma(path="../data/images/im0002.ppm")
+	feats = extractFeature(read_img(path="../data/images/im0002.ppm",gray=False))
 	feats = np.array(feats)
-	c,h,w = feats.shape
-	feats = feats.reshape((h*w,c))
-	knn = KNNSolver(k=10,p=50,b=10,data=feats)
+	feats = feats - np.mean(feats, axis = 0)
+	feats /= np.std(feats, axis = 0)# 	c,h,w = feats.shape
+	# feats = feats.reshape((h*w,c))
+	knn = KNNSolver(k=10,p=20,b=5,data=feats)
 	labels = knn.step()
-	print(labels.reshape((60,60)))
+	plt.imshow(labels.reshape((200,200)))
+	plt.show()
 main()
+
+# feats = extractFeature(I)
+# feats = np.array(feats)
+# c,h,w = feats.shape
+# f1 = feats[0, :, :].reshape((h*w, 1))
+# f2 = feats[1, :, :].reshape((h*w, 1))
+# f3 = feats[2, :, :].reshape((h*w, 1))
+# feats = np.concatenate((f1, f2, f3), axis = 1)

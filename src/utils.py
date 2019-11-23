@@ -17,29 +17,29 @@ from post_processing import clean_small_areas
 # warnings.filterwarnings('error')
 
 def read_img(path, gray=True, reshape=False, shape=(256,256)):
-	if gray:
-		img = imread(path)[:,:,1]
-		if reshape:
-			img = cv2.resize(img,shape,interpolation=cv2.INTER_NEAREST)
+    if gray:
+        img = imread(path)[:,:,1]
+        if reshape:
+            img = cv2.resize(img,shape,interpolation=cv2.INTER_NEAREST)
 
-	else:
-		img = imread(path)
-		if reshape:
-			img = cv2.resize(img,shape,interpolation=cv2.INTER_NEAREST)
+    else:
+        img = imread(path)
+        if reshape:
+            img = cv2.resize(img,shape,interpolation=cv2.INTER_NEAREST)
 
-	return img
+    return img
 
 def delF(img):
-	Fx, Fy = np.gradient(img)
-	return np.sqrt(Fx**2 + Fy**2)
+    Fx, Fy = np.gradient(img)
+    return np.sqrt(Fx**2 + Fy**2)
 
 def maxEigofHess(img):
-	Fx, Fy = np.gradient(img)
-	Fxx, Fxy = np.gradient(Fx)
-	_, Fyy = np.gradient(Fy)
+    Fx, Fy = np.gradient(img)
+    Fxx, Fxy = np.gradient(Fx)
+    _, Fyy = np.gradient(Fy)
 
-	eig = (Fxx + Fyy + ((Fxx - Fyy)**2 + (2*Fxy)**2)**0.5)/2.0
-	return eig
+    eig = (Fxx + Fyy + ((Fxx - Fyy)**2 + (2*Fxy)**2)**0.5)/2.0
+    return eig
 
 def getForegroundMask(img, hsi_img):
 	img = np.array(img)
@@ -74,14 +74,14 @@ def extractFeature(img,mean,std):
 
 
 def get_dataset(img_path, label_path):
-	images = []
-	for img in os.listdir(img_path):
-		images.append(read_img(img_path + '/' + img))
-	labels = []
-	for label in os.listdir(label_path):
-		labels.append(read_img(label_path + '/' + label))
+    images = []
+    for img in os.listdir(img_path):
+        images.append(read_img(img_path + '/' + img))
+    labels = []
+    for label in os.listdir(label_path):
+        labels.append(read_img(label_path + '/' + label))
 
-	return np.array(images), np.array(labels)
+    return np.array(images), np.array(labels)
 
 def adjustGamma(img,gamma=1.2):
 	invGamma = 1.0/gamma
@@ -89,21 +89,21 @@ def adjustGamma(img,gamma=1.2):
 	return cv2.LUT(np.array(img, dtype = np.uint8), table)
 
 def clahe(img,clipLimit=4.0,tileGridSize=(10,10)):
-	clahe = cv2.createCLAHE(clipLimit=clipLimit,tileGridSize=tileGridSize)
-	return clahe.apply(np.array(img,dtype=np.uint8))
+    clahe = cv2.createCLAHE(clipLimit=clipLimit,tileGridSize=tileGridSize)
+    return clahe.apply(np.array(img,dtype=np.uint8))
 
 
 def getNormalizationStatistics(img_path):
-	images = []
-	for img in os.listdir(img_path):
-		images.append(read_img(os.path.join(img_path,img),gray=True))
-	images = np.array(images)
-	return np.mean(images),np.std(images)
+    images = []
+    for img in os.listdir(img_path):
+        images.append(read_img(os.path.join(img_path,img),gray=True))
+    images = np.array(images)
+    return np.mean(images),np.std(images)
 
 def normalizeImage(img,mean,std):
-	img = (img - mean)/std
-	img = (img - np.min(img))/(np.max(img)-np.min(img))*255.0
-	return img
+    img = (img - mean)/std
+    img = (img - np.min(img))/(np.max(img)-np.min(img))*255.0
+    return img
 
 def run_model(model, img, label, name):
 	img = cv2.imread(img)
