@@ -49,10 +49,11 @@ def extractFeature(img,mean,std):
     img = np.array(img,dtype=np.uint8)
     fg = getForegroundMask(img)
     # img = normalizeImage(img,mean,std)
-    img[fg!=0] = 255-img[fg!=0]
+    img[fg==0] = 255-img[fg==0]
+    img = cv2.GaussianBlur(img,(21,21),0.5)
     img = clahe(img)
     img = adjustGamma(img)
-    img[fg==0]=0
+    img[fg==0]=255
     # img = cv2.GaussianBlur(img,(41,41),1)
     # img = 255.0-img
     img = img/255
@@ -133,11 +134,12 @@ if __name__ == "__main__":
     img = read_img('../data/images/im0001.ppm',gray=True)
     fg = getForegroundMask(img)
     img = np.array(img,dtype=np.uint8)
-    img[fg!=0] = 255-img[fg!=0]
+    img[fg==0] = 255-img[fg==0]
     # img = normalizeImage(img,mean,std)
-    img = clahe(img)
+    # img = clahe(img)
+    img = cv2.equalizeHist(img)
     img = adjustGamma(img)
-    img[fg==0]=0
+    img[fg==0]=255
     # img = cv2.GaussianBlur(img,(41,41),1)
     imshow(img)
     # imshow(getForegroundMask(img))
