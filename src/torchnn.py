@@ -36,14 +36,14 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 
 	for epoch in range(num_epochs):
 		print('Epoch ' + str(epoch+1) + ' running')
-		if epoch > 20:
+		if epoch > 15:
 			optimizer = optim.SGD(model.parameters(), lr=5e-3, momentum=0.1)
-		if epoch > 40:
-			optimizer = optim.SGD(model.parameters(), lr=1e-3, momentum=0.05)
-		if epoch > 60:
-			optimizer = optim.SGD(model.parameters(), lr=1e-4, momentum=0.01)
-		if epoch > 20:
-			optimizer = optim.SGD(model.parameters(), lr=1e-5, momentum=0.01)
+		if epoch > 25:
+			optimizer = optim.SGD(model.parameters(), lr=5e-4, momentum=0.05)
+		if epoch > 35:
+			optimizer = optim.SGD(model.parameters(), lr=5e-5, momentum=0.01)
+		if epoch > 45:
+			optimizer = optim.SGD(model.parameters(), lr=5e-6, momentum=0.01)
 		model.train()
 		running_loss = 0.0
 		count = 0
@@ -87,7 +87,7 @@ criterion = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1, 5])).float(
 model_optim = optim.SGD(model.parameters(), lr=4e-2, momentum=0.9)
 model = train_model(model, criterion, model_optim,
                     # exp_lr_scheduler,
-                    num_epochs=100)
+                    num_epochs=50)
 
 torch.save(model, './Models/model')
 
