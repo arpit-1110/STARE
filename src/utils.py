@@ -7,6 +7,7 @@ import torch
 from PIL import Image
 import torch
 import matplotlib.pyplot as plt
+import queue
 import glob
 from post_processing import clean_small_areas
 # import warnings
@@ -37,34 +38,67 @@ def maxEigofHess(img):
     eig = (Fxx + Fyy + ((Fxx - Fyy)**2 + (2*Fxy)**2)**0.5)/2.0
     return eig
 
-def getForegroundMask(hsi_img):
-	img = np.zeros(hsi_img.shape)
-	img[hsi_img>50] = 255
-	return img
+def getForegroundMask(img, hsi_img):
+    img = np.array(img)
+    img[hsi_img>50] = 255
+    img[hsi_img<=50] = 0
+    return img
+
+def getForegroundMaskSVM(img):
+    img = np.array(img)
+    img[img>50] = 255
+    img[img<=50] = 0
+    return img
 
 
 def extractFeature(img,mean,std):
-	img = np.array(img,dtype=np.uint8)
-	hsi_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:, :, 2]
-	img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
-	fg = getForegroundMask(hsi_img)
-	img[fg!=0] = 255-img[fg!=0]
-	# img = cv2.GaussianBlur(img, (21, 21), 0.51)
-	# img = clahe(img)
-	img = adjustGamma(img)
-	img[fg==0]=0
-	img = img/255
-	# imshow(img)
-	featImg = np.zeros((img.shape[0]*img.shape[1], 3))
-	featImg[:, 0] = (img.reshape(-1))
-	featImg[:, 1] = delF(img).reshape(-1)
-	featImg[:, 2] = maxEigofHess(img).reshape(-1)
-	mean = featImg.mean(axis=0)
-	std = featImg.std(axis=0)
-	featImg = (featImg - mean)/(std + 1e-7)
-	# imshow(maxEigofHess(img))
+    img = np.array(img,dtype=np.uint8)
+    hsi_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:, :, 2]
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
+    fg = getForegroundMask(img,hsi_img)
+    # img = normalizeImage(img,mean,std)
+    img[fg!=0] = 255-img[fg!=0]
+    img = cv2.GaussianBlur(img,(21,21),0.5)
+    # img = clahe(img)
+    img = adjustGamma(img)
+    img[fg==0]=0
+    # img = cv2.GaussianBlur(img,(41,41),1)
+    # img = 255.0-img
+    img = img/255
+    print(np.max(img))
+    featImg = np.zeros((img.shape[0]*img.shape[1], 3))
+    featImg[:, 0] = (img.reshape(-1))
+    featImg[:, 1] = delF(img).reshape(-1)
+    featImg[:, 2] = maxEigofHess(img).reshape(-1)
+    # featImg[:, 1] = 1.0
+    # featImg[:, 2] = 1.0
+    # featImg[:,2] = 1
 
-	return featImg
+    return featImg
+
+def extractFeatureSVM(img,mean,std):
+    img = np.array(img,dtype=np.uint8)
+    fg = getForegroundMaskSVM(img)
+    # img = normalizeImage(img,mean,std)
+    img[fg!=0] = 255-img[fg!=0]
+    # img = cv2.GaussianBlur(img,(21,21),0.5)
+    img = clahe(img)
+    img = adjustGamma(img)
+    img[fg==0]=0
+    # img = cv2.GaussianBlur(img,(41,41),1)
+    # img = 255.0-img
+    img = img/255
+    # print(np.max(img))
+    featImg = np.zeros((img.shape[0]*img.shape[1], 3))
+    featImg[:, 0] = (img.reshape(-1))
+    featImg[:, 1] = delF(img).reshape(-1)
+    featImg[:, 2] = maxEigofHess(img).reshape(-1)
+    # featImg[:, 1] = 1.0
+    # featImg[:, 2] = 1.0
+    # featImg[:,2] = 1
+
+    return featImg
+
 
 
 def get_dataset(img_path, label_path):
@@ -77,10 +111,11 @@ def get_dataset(img_path, label_path):
 
     return np.array(images), np.array(labels)
 
-def adjustGamma(img,gamma=1):
-	invGamma = 1.0/gamma
-	table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
-	return cv2.LUT(np.array(img, dtype = np.uint8), table)
+
+def adjustGamma(img,gamma=0.8):
+    invGamma = 1.0/gamma
+    table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
+    return cv2.LUT(np.array(img, dtype = np.uint8), table)
 
 def clahe(img,clipLimit=4.0,tileGridSize=(10,10)):
     clahe = cv2.createCLAHE(clipLimit=clipLimit,tileGridSize=tileGridSize)
@@ -122,7 +157,6 @@ def run_model(model, img_name, label, name, verbose=False):
 	pred = pred[:, 1]
 	pred = pred*255
 	imsave(name, thresh_pred.reshape(605, 700))
-
 
 
 if __name__ == "__main__":
