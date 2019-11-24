@@ -9,7 +9,6 @@ import torch
 import matplotlib.pyplot as plt
 import glob
 from post_processing import clean_small_areas
-
 # import warnings
 # warnings.filterwarnings('error')
 
@@ -50,8 +49,8 @@ def extractFeature(img,mean,std):
 	img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
 	fg = getForegroundMask(hsi_img)
 	img[fg!=0] = 255-img[fg!=0]
+	# img = cv2.GaussianBlur(img, (21, 21), 0.51)
 	# img = clahe(img)
-	# img = cv2.GaussianBlur(img, (3, 3), 1)
 	img = adjustGamma(img)
 	img[fg==0]=0
 	img = img/255
@@ -63,6 +62,7 @@ def extractFeature(img,mean,std):
 	mean = featImg.mean(axis=0)
 	std = featImg.std(axis=0)
 	featImg = (featImg - mean)/(std + 1e-7)
+	# imshow(maxEigofHess(img))
 
 	return featImg
 
@@ -112,21 +112,24 @@ def run_model(model, img_name, label, name, verbose=False):
 	img = extractFeature(img, 85.1, 48.9).reshape(605*700, 3)
 	pred = model(torch.from_numpy(img).float()).detach().numpy()
 	argmax_pred = np.argmax(pred, 1)
-	thresh_pred = 1*(pred[:, 1] > 0.8)
+	thresh_pred = 1*(pred[:, 1] > 0.4)
 	label = cv2.imread(label, cv2.IMREAD_GRAYSCALE).reshape(605, 700)
+	imsave(name[:9]+'l'+name[9:], label)
 	label = label//255
 	label = label.reshape(605*700)
 	if verbose:
-		print('Recall for the image ' + img_name.split('/')[-1] + ' is:', recall(label, argmax_pred))
+		print('Recall or class 1 for the image ' + img_name.split('/')[-1] + ' is:', recall(label, argmax_pred))
 	pred = pred[:, 1]
 	pred = pred*255
-	imsave(name, argmax_pred.reshape(605, 700))
+	imsave(name, thresh_pred.reshape(605, 700))
 
 
 
 if __name__ == "__main__":
-	img = read_img('../data/images/im0001.ppm', gray=True)
+	# img = read_img('../data/images/im0001.ppm', gray=True)
 	imgs = glob.glob('../data/val_images/*.ppm')
 	lbls = glob.glob('../data/val_labels/*.ppm')
+	imgs.sort()
+	lbls.sort()
 	for i in range(len(imgs)):
 		run_model(torch.load('Models/model'), imgs[i], lbls[i], 'Results/'+str(i)+'.png', verbose=True)
