@@ -66,7 +66,7 @@ def extractFeature(img,mean,std):
     # img = cv2.GaussianBlur(img,(41,41),1)
     # img = 255.0-img
     img = img/255
-    print(np.max(img))
+    # print(np.max(img))
     featImg = np.zeros((img.shape[0]*img.shape[1], 3))
     featImg[:, 0] = (img.reshape(-1))
     featImg[:, 1] = delF(img).reshape(-1)
@@ -74,6 +74,10 @@ def extractFeature(img,mean,std):
     # featImg[:, 1] = 1.0
     # featImg[:, 2] = 1.0
     # featImg[:,2] = 1
+    mean = featImg.mean(axis=0)
+    std = featImg.std(axis=0)
+
+    featImg = (featImg - mean)/(std + 1e-7)
 
     return featImg
 
@@ -161,10 +165,10 @@ def run_model(model, img_name, label, name, verbose=False):
 
 
 if __name__ == "__main__":
-    # img = read_img('../data/images/im0001.ppm', gray=True)
+        # img = read_img('../data/images/im0001.ppm', gray=True)
     imgs = glob.glob('../data/val_images/*.ppm')
     lbls = glob.glob('../data/val_labels/*.ppm')
     imgs.sort()
     lbls.sort()
     for i in range(len(imgs)):
-        run_model(torch.load('Models/model'), imgs[i], lbls[i], 'Results/'+str(i)+'.png', verbose=True)
+        run_model(torch.load('Models/model'), imgs[i], lbls[i], 'Results/'+str(i)+'.png', verbose=False)
