@@ -14,125 +14,129 @@ from post_processing import clean_small_areas
 # warnings.filterwarnings('error')
 
 def read_img(path, gray=True, reshape=False, shape=(256,256)):
-    if gray:
-        img = imread(path)[:,:,1]
-        if reshape:
-            img = cv2.resize(img,shape,interpolation=cv2.INTER_NEAREST)
+	if gray:
+		img = imread(path)[:,:,1]
+		if reshape:
+			img = cv2.resize(img,shape,interpolation=cv2.INTER_NEAREST)
 
-    else:
-        img = imread(path)
-        if reshape:
-            img = cv2.resize(img,shape,interpolation=cv2.INTER_NEAREST)
+	else:
+		img = imread(path)
+		if reshape:
+			img = cv2.resize(img,shape,interpolation=cv2.INTER_NEAREST)
 
-    return img
+	return img
 
 def delF(img):
-    Fx, Fy = np.gradient(img)
-    return np.sqrt(Fx**2 + Fy**2)
+	Fx, Fy = np.gradient(img)
+	return np.sqrt(Fx**2 + Fy**2)
 
 def maxEigofHess(img):
-    Fx, Fy = np.gradient(img)
-    Fxx, Fxy = np.gradient(Fx)
-    _, Fyy = np.gradient(Fy)
+	Fx, Fy = np.gradient(img)
+	Fxx, Fxy = np.gradient(Fx)
+	_, Fyy = np.gradient(Fy)
 
-    eig = (Fxx + Fyy + ((Fxx - Fyy)**2 + (2*Fxy)**2)**0.5)/2.0
-    return eig
+	eig = (Fxx + Fyy + ((Fxx - Fyy)**2 + (2*Fxy)**2)**0.5)/2.0
+	return eig
 
 def getForegroundMask(img, hsi_img):
-    img = np.array(img)
-    img[hsi_img>50] = 255
-    img[hsi_img<=50] = 0
-    return img
+	img = np.array(img)
+	img[hsi_img>50] = 255
+	img[hsi_img<=50] = 0
+	return img
 
 def getForegroundMaskSVM(img):
-    img = np.array(img)
-    img[img>50] = 255
-    img[img<=50] = 0
-    return img
+	img = np.array(img)
+	img[img>50] = 255
+	img[img<=50] = 0
+	return img
 
 
 def extractFeature(img,mean,std):
-    img = np.array(img,dtype=np.uint8)
-    hsi_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:, :, 2]
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
-    fg = getForegroundMask(img,hsi_img)
-    # img = normalizeImage(img,mean,std)
-    img[fg!=0] = 255-img[fg!=0]
-    img = cv2.GaussianBlur(img,(21,21),0.5)
-    # img = clahe(img)
-    img = adjustGamma(img)
-    img[fg==0]=0
-    # img = cv2.GaussianBlur(img,(41,41),1)
-    # img = 255.0-img
-    img = img/255
-    print(np.max(img))
-    featImg = np.zeros((img.shape[0]*img.shape[1], 3))
-    featImg[:, 0] = (img.reshape(-1))
-    featImg[:, 1] = delF(img).reshape(-1)
-    featImg[:, 2] = maxEigofHess(img).reshape(-1)
-    # featImg[:, 1] = 1.0
-    # featImg[:, 2] = 1.0
-    # featImg[:,2] = 1
+	img = np.array(img,dtype=np.uint8)
+	hsi_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)[:, :, 2]
+	img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)[:, :, 1].reshape(605, 700)
+	fg = getForegroundMask(img,hsi_img)
+	# img = normalizeImage(img,mean,std)
+	img[fg!=0] = 255-img[fg!=0]
+	img = cv2.GaussianBlur(img,(21,21),0.5)
+	# img = clahe(img)
+	img = adjustGamma(img)
+	img[fg==0]=0
+	# img = cv2.GaussianBlur(img,(41,41),1)
+	# img = 255.0-img
+	img = img/255
+	# print(np.max(img))
+	featImg = np.zeros((img.shape[0]*img.shape[1], 3))
+	featImg[:, 0] = (img.reshape(-1))
+	featImg[:, 1] = delF(img).reshape(-1)
+	featImg[:, 2] = maxEigofHess(img).reshape(-1)
+	# featImg[:, 1] = 1.0
+	# featImg[:, 2] = 1.0
+	# featImg[:,2] = 1
+	mean = featImg.mean(axis=0)
+	std = featImg.std(axis=0)
+	
+	featImg = (featImg - mean)/(std + 1e-7)
 
-    return featImg
+	return featImg
 
 def extractFeatureSVM(img,mean,std):
-    img = np.array(img,dtype=np.uint8)
-    fg = getForegroundMaskSVM(img)
-    # img = normalizeImage(img,mean,std)
-    img[fg!=0] = 255-img[fg!=0]
-    # img = cv2.GaussianBlur(img,(21,21),0.5)
-    img = clahe(img)
-    img = adjustGamma(img)
-    img[fg==0]=0
-    # img = cv2.GaussianBlur(img,(41,41),1)
-    # img = 255.0-img
-    img = img/255
-    # print(np.max(img))
-    featImg = np.zeros((img.shape[0]*img.shape[1], 3))
-    featImg[:, 0] = (img.reshape(-1))
-    featImg[:, 1] = delF(img).reshape(-1)
-    featImg[:, 2] = maxEigofHess(img).reshape(-1)
-    # featImg[:, 1] = 1.0
-    # featImg[:, 2] = 1.0
-    # featImg[:,2] = 1
+	img = np.array(img,dtype=np.uint8)
+	fg = getForegroundMaskSVM(img)
+	# img = normalizeImage(img,mean,std)
+	img[fg!=0] = 255-img[fg!=0]
+	# img = cv2.GaussianBlur(img,(21,21),0.5)
+	img = clahe(img)
+	img = adjustGamma(img)
+	img[fg==0]=0
+	# img = cv2.GaussianBlur(img,(41,41),1)
+	# img = 255.0-img
+	img = img/255
+	# print(np.max(img))
+	featImg = np.zeros((img.shape[0]*img.shape[1], 3))
+	featImg[:, 0] = (img.reshape(-1))
+	featImg[:, 1] = delF(img).reshape(-1)
+	featImg[:, 2] = maxEigofHess(img).reshape(-1)
+	# featImg[:, 1] = 1.0
+	# featImg[:, 2] = 1.0
+	# featImg[:,2] = 1
 
-    return featImg
+	return featImg
 
 
 
 def get_dataset(img_path, label_path):
-    images = []
-    for img in os.listdir(img_path):
-        images.append(read_img(img_path + '/' + img))
-    labels = []
-    for label in os.listdir(label_path):
-        labels.append(read_img(label_path + '/' + label))
+	images = []
+	for img in os.listdir(img_path):
+		images.append(read_img(img_path + '/' + img))
+	labels = []
+	for label in os.listdir(label_path):
+		labels.append(read_img(label_path + '/' + label))
 
-    return np.array(images), np.array(labels)
+	return np.array(images), np.array(labels)
 
 
 def adjustGamma(img,gamma=0.8):
-    invGamma = 1.0/gamma
-    table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
-    return cv2.LUT(np.array(img, dtype = np.uint8), table)
+	invGamma = 1.0/gamma
+	table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
+	return cv2.LUT(np.array(img, dtype = np.uint8), table)
 
 def clahe(img,clipLimit=4.0,tileGridSize=(10,10)):
-    clahe = cv2.createCLAHE(clipLimit=clipLimit,tileGridSize=tileGridSize)
-    return clahe.apply(np.array(img,dtype=np.uint8))
+	clahe = cv2.createCLAHE(clipLimit=clipLimit,tileGridSize=tileGridSize)
+	return clahe.apply(np.array(img,dtype=np.uint8))
 
 
 def getNormalizationStatistics(img_path):
-    images = []
-    for img in os.listdir(img_path):
-        images.append(read_img(os.path.join(img_path,img),gray=True))
-    images = np.array(images)
-    return np.mean(images),np.std(images)
+	images = []
+	for img in os.listdir(img_path):
+		images.append(read_img(os.path.join(img_path,img),gray=True))
+	images = np.array(images)
+	return np.mean(images),np.std(images)
 
 def normalizeImage(img,mean,std):
-    img = (img - mean)/std
-    img = (img - np.min(img))/(np.max(img)-np.min(img))*255.0
-    return img
+	img = (img - mean)/std
+	img = (img - np.min(img))/(np.max(img)-np.min(img))*255.0
+	return img
 
 def recall(l, t):
 	eq = l == t
@@ -166,4 +170,4 @@ if __name__ == "__main__":
 	imgs.sort()
 	lbls.sort()
 	for i in range(len(imgs)):
-		run_model(torch.load('Models/model'), imgs[i], lbls[i], 'Results/'+str(i)+'.png', verbose=True)
+		run_model(torch.load('Models/model'), imgs[i], lbls[i], 'Results/'+str(i)+'.png', verbose=False)

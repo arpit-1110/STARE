@@ -43,7 +43,7 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 
 	for epoch in range(num_epochs):
 		print('Epoch ' + str(epoch+1) + ' running')
-		if epoch > 15:
+		if epoch > 12:
 			optimizer = optim.SGD(model.parameters(), lr=5e-3, momentum=0.1)
 		model.train()
 		running_loss = 0.0
@@ -85,7 +85,7 @@ model = NNModel()
 model = model.to(device)
 criterion = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1, 5])).float())
 # criterion = nn.CrossEntropyLoss()
-model_optim = optim.SGD(model.parameters(), lr=2e-2, momentum=0.9)
+model_optim = optim.SGD(model.parameters(), lr=5e-2, momentum=0.9)
 # exp_lr_scheduler = lr_scheduler.StepLR(model_optim, step_size=2, gamma=0.1)
 model = train_model(model, criterion, model_optim,
                     # exp_lr_scheduler,
