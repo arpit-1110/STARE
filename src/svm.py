@@ -21,7 +21,7 @@ class SVM_Classifier():
         self.imgdir = os.path.join(self.datadir,'images')
         self.labeldir = os.path.join(self.datadir,'labels')
         # self.classifier = linear_model.SGDClassifier(max_iter=5000, verbose=1)
-        self.classifier = svm.LinearSVC(max_iter=5000, class_weight = {1.0:1,-1.0:5.7}, verbose=1, C=0.1)  # -1 weight dec -> white inc
+        self.classifier = svm.LinearSVC(max_iter=5000, class_weight = {1.0:1,-1.0:5.3}, verbose=1, C=0.1)  # -1 weight dec -> white inc
         self.feature_map = None
         self.max_iter = 100000
         self.mean = None

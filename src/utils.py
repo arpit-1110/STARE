@@ -85,7 +85,7 @@ def extractFeatureSVM(img,mean,std):
     fg = getForegroundMaskSVM(img)
     # img = normalizeImage(img,mean,std)
     img[fg!=0] = 255-img[fg!=0]
-    img = cv2.GaussianBlur(img,(21,21),0.5)
+    # img = cv2.GaussianBlur(img,(21,21),0.5)
     img = clahe(img)
     img = adjustGamma(img)
     img[fg==0]=0
@@ -116,7 +116,7 @@ def get_dataset(img_path, label_path):
     return np.array(images), np.array(labels)
 
 
-def adjustGamma(img,gamma=0.9):
+def adjustGamma(img,gamma=0.8):
     invGamma = 1.0/gamma
     table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
     return cv2.LUT(np.array(img, dtype = np.uint8), table)
